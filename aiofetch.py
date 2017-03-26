@@ -1,3 +1,5 @@
+__version__ = "0.1.0"
+
 import os
 import asyncio
 import argparse
@@ -6,6 +8,7 @@ import aiohttp
 import async_timeout
 from aiofiles import open as aopen
 from bs4 import BeautifulSoup as bs
+
 
 async def save_img(fpath, url):
     print("request img from", url)
@@ -21,10 +24,10 @@ async def fetch_imgs(session, url):
     with async_timeout.timeout(10):
         async with session.get(url) as r:
             soup = bs(await r.text(), 'lxml')
-        pages = soup.select('option')[1:]
+        ps = soup.select('option')[1:]
         img_url = soup.select('img[src*=".jpg"]')[0]['src']
         img_root = img_url.rsplit('/', 1)[0]
-        return ("%s/%03d.jpg" % (img_root, idx) for idx, _ in enumerate(pages, 1))
+        return ("%s/%03d.jpg" % (img_root, idx) for idx, _ in enumerate(ps, 1))
 
 
 async def fetch_vols(url):
@@ -33,6 +36,7 @@ async def fetch_vols(url):
     vols = soup.select('fieldset:nth-of-type(2) a')
     cur = url.rsplit('/', 2)[0]
     return ((v.text, cur + v['href']) for v in vols)
+
 
 async def main(args):
     dest = args.dir or "Comic_from_%s" % args.url.split('/', 1)[-1]
