@@ -14,10 +14,9 @@ __doc__ = "comic image fetcher for http://www.cartoonmad.com."
 async def save_img(fpath, url, semaphore):
     print("request img from", url)
     async with semaphore, aiohttp.request("GET", url) as r:
-        data = await r.read()
         print("saving file to:", fpath, url)
         async with aopen(fpath, 'wb') as f:
-            await f.write(data)
+            await f.write(await r.read())
 
 
 async def fetch_imgs(url, vol):
