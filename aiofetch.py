@@ -38,7 +38,7 @@ async def fetch_vols(url):
 
 
 async def main(args):
-    dest = args.dir or "Comic_from_%s" % args.url.split('/', 1)[-1].replace('/', '-')
+    dest = args.dir or "Comic_from_%s" % args.url.split('/', 1)[-1]
     if not os.path.isdir(dest):
         os.makedirs(dest)
     os.chdir(dest)
