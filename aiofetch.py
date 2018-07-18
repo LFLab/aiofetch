@@ -8,7 +8,7 @@ import aiohttp
 from aiofiles import open as aopen
 from bs4 import BeautifulSoup as bs
 
-__version__ = "0.3.4"
+__version__ = "0.4.1"
 __doc__ = "comic image fetcher for http://www.cartoonmad.com/"
 
 PAGE_TIMEOUT = 15
@@ -20,8 +20,10 @@ async def save_img(fpath, url, session):
         async with session.get(url, timeout=IMG_TIMEOUT) as r:
             print("request img from", url)
             data = await r.read()
-        async with aopen(fpath, 'wb') as f:
-            print("saving file to:", fpath, url)
+        _, ext = os.path.splitext(url)
+        fname = "%s%s" % (fpath, ext)
+        async with aopen(fname, 'wb') as f:
+            print("saving file to:", fname, url)
             await f.write(data)
     except Exception as e:
         print("fail to save img from", url, "due to", repr(e))
@@ -59,7 +61,7 @@ async def main(args):
 
     fs = []
     for vol, url in await fetch_vols(args.url, session):
-        if not os.path.isdir(vol):
+        if not args.flatten and not os.path.isdir(vol):
             os.makedirs(vol)
             print("create dir %s" % vol)
         fs.append(asyncio.ensure_future(fetch_imgs(url, vol, session)))
@@ -72,7 +74,8 @@ async def main(args):
             print("request for %s timeout. skip to next." % vol, file=sys.stderr)
         else:
             for idx, img_url in enumerate(imgs, 1):
-                fpath = os.path.join(vol, "%03d.jpg" % idx)
+                sep = "_" if args.flatten else os.path.sep
+                fpath = "%s%s%03d" % (vol, sep, idx)
                 if not os.path.exists(fpath):
                     img_f = asyncio.ensure_future(save_img(fpath, img_url, session))
                     img_fs.append(img_f)
@@ -92,8 +95,13 @@ if __name__ == '__main__':
     arg = argparse.ArgumentParser(description=__doc__)
     arg.add_argument("url", help="the url.")
     arg.add_argument("-dest", "-d", dest="dir", help="the destnation folder.")
+    arg.add_argument("-F", "--flatten", dest="flatten", action="store_true",
+                     help="save all pages into one folder.")
     arg.add_argument("-limit", "-l", type=int, default=256, dest='limit',
                      help="the concurrent saving image limit.")
 
-    loop = asyncio.get_event_loop()
+    if sys.platform == 'win32':
+        loop = asyncio.ProactorEventLoop()
+    else:
+        loop = asyncio.get_event_loop()
     loop.run_until_complete(main(arg.parse_args()))
