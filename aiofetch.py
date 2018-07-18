@@ -11,10 +11,13 @@ from bs4 import BeautifulSoup as bs
 __version__ = "0.3.4"
 __doc__ = "comic image fetcher for http://www.cartoonmad.com/"
 
+PAGE_TIMEOUT = 15
+IMG_TIMEOUT = 30
+
 
 async def save_img(fpath, url, session):
     try:
-        async with session.get(url, timeout=45) as r:
+        async with session.get(url, timeout=IMG_TIMEOUT) as r:
             print("request img from", url)
             data = await r.read()
         async with aopen(fpath, 'wb') as f:
@@ -29,7 +32,7 @@ async def save_img(fpath, url, session):
 
 async def fetch_imgs(url, vol, session):
     print('request vol %s page 1 in url: %s' % (vol, url))
-    async with session.get(url, timeout=20) as r:
+    async with session.get(url, timeout=PAGE_TIMEOUT) as r:
         soup = bs(await r.text(errors='ignore'), 'html.parser')
     ps = soup.select('option')[1:]
     img_url = soup.select('img[onload]')[0]['src']
@@ -38,7 +41,7 @@ async def fetch_imgs(url, vol, session):
 
 
 async def fetch_vols(url, session):
-    async with session.get(url, timeout=10) as r:
+    async with session.get(url, timeout=PAGE_TIMEOUT) as r:
         soup = bs(await r.text(errors='ignore'), "html.parser")
     vols = soup.select('fieldset:nth-of-type(2) a')
     cur = url.rsplit('/', 2)[0]
