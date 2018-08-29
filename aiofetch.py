@@ -1,3 +1,4 @@
+""" comic image fetcher for http://www.cartoonmad.com/ """
 import os
 import sys
 import asyncio
@@ -8,20 +9,21 @@ import aiohttp
 from aiofiles import open as aopen
 from bs4 import BeautifulSoup as bs
 
-__version__ = "0.4.1"
-__doc__ = "comic image fetcher for http://www.cartoonmad.com/"
+__version__ = "0.4.2"
 
 PAGE_TIMEOUT = 15
 IMG_TIMEOUT = 30
 
 
 async def save_img(fpath, url, session):
+    _, ext = os.path.splitext(url)
+    fname = "%s%s" % (fpath, ext)
+    if os.path.exists(fname):
+        return None
     try:
         async with session.get(url, timeout=IMG_TIMEOUT) as r:
             print("request img from", url)
             data = await r.read()
-        _, ext = os.path.splitext(url)
-        fname = "%s%s" % (fpath, ext)
         async with aopen(fname, 'wb') as f:
             print("saving file to:", fname, url)
             await f.write(data)
@@ -89,7 +91,7 @@ async def main(args):
         pending = [f.result() for f in done if f.result()]
 
     print("=== program end at %s ===" % datetime.now(), file=sys.stderr)
-    session.close()
+    await session.close()
 
 if __name__ == '__main__':
     arg = argparse.ArgumentParser(description=__doc__)
@@ -102,6 +104,8 @@ if __name__ == '__main__':
 
     if sys.platform == 'win32':
         loop = asyncio.ProactorEventLoop()
+        asyncio.set_event_loop(loop)
     else:
         loop = asyncio.get_event_loop()
+
     loop.run_until_complete(main(arg.parse_args()))
