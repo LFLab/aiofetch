@@ -13,6 +13,8 @@ __version__ = "0.4.2"
 
 PAGE_TIMEOUT = 15
 IMG_TIMEOUT = 30
+REFHEAD = dict(Referer='')
+REFERER = "https://www.cartoonmad.com/comic/"
 
 
 async def save_img(fpath, url, session):
@@ -21,8 +23,14 @@ async def save_img(fpath, url, session):
     if os.path.exists(fname):
         return None
     try:
-        async with session.get(url, timeout=IMG_TIMEOUT) as r:
+        h, furl = dict(Referer=REFERER), REFERER + url
+        async with session.get(furl, timeout=IMG_TIMEOUT, headers=h) as r:
             print("request img from", url)
+            if not ext:
+                _, ext = os.path.splitext(r.url.path)
+                fname = "%s%s" % (fpath, ext)
+                if os.path.exists(fname):
+                    return None
             data = await r.read()
         async with aopen(fname, 'wb') as f:
             print("saving file to:", fname, url)
@@ -41,7 +49,7 @@ async def fetch_imgs(url, vol, session):
     ps = soup.select('option')[1:]
     img_url = soup.select('img[onload]')[0]['src']
     img_root = img_url.rsplit('/', 1)[0]
-    return vol, ("%s/%03d.jpg" % (img_root, idx) for idx, _ in enumerate(ps, 1))
+    return vol, ("%s/%03d" % (img_root, idx) for idx, _ in enumerate(ps, 1))
 
 
 async def fetch_vols(url, session):
